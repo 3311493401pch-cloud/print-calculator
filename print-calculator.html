@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>打印最优计算器</title>
+    <style>
+        :root {
+            --bg: #f6f3ed;
+            --card: #fff;
+            --border: #e6e0d5;
+            --text: #2c2416;
+            --muted: #9b8e7a;
+            --accent: #c7522e;
+            --green: #3a7d5c;
+            --gold: #b8860b;
+            --shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 15px;
+            line-height: 1.5;
+            padding: 12px;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .container { max-width: 500px; margin: 0 auto; }
+
+        /* Card */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+        }
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 10px;
+        }
+
+        /* Inline fields */
+        .row { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
+        .row > * { flex:1; min-width:60px; }
+        .field { margin-bottom:0; }
+        .field label {
+            display:block;
+            font-size:0.72rem;
+            font-weight:600;
+            color:var(--muted);
+            margin-bottom:2px;
+            white-space:nowrap;
+        }
+        .field input, .field select {
+            width:100%;
+            padding:8px 10px;
+            border:1.5px solid var(--border);
+            border-radius:8px;
+            font-size:0.9rem;
+            font-family:inherit;
+            background:#fdfdfb;
+            color:var(--text);
+            appearance:none;
+            -webkit-appearance:none;
+        }
+        .field select {
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Cpath d='M5 7L1 3h8z' fill='%239b8e7a'/%3E%3C/svg%3E");
+            background-repeat:no-repeat;
+            background-position:right 10px center;
+            padding-right:28px;
+        }
+        .field input:focus, .field select:focus {
+            outline:none;
+            border-color:var(--accent);
+            box-shadow:0 0 0 2px rgba(199,82,46,0.08);
+        }
+
+        /* Result bar */
+        .result-bar {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:12px 16px;
+            background:var(--card);
+            border:1px solid var(--border);
+            border-radius:12px;
+            margin-bottom:10px;
+            box-shadow:var(--shadow);
+        }
+        .result-bar .main { text-align:center; flex:1; }
+        .result-bar .main .big {
+            font-size:2rem;
+            font-weight:800;
+            color:var(--green);
+            line-height:1;
+        }
+        .result-bar .main .big.warn { color:var(--accent); }
+        .result-bar .main .sub { font-size:0.72rem; color:var(--muted); margin-top:2px; }
+        .result-bar .side {
+            font-size:0.78rem;
+            color:var(--muted);
+            text-align:center;
+            min-width:60px;
+        }
+        .result-bar .side strong { display:block; font-size:1rem; color:var(--text); }
+
+        /* Book card */
+        .book-card {
+            border:1px solid var(--border);
+            border-radius:10px;
+            padding:10px 14px;
+            margin-bottom:8px;
+            position:relative;
+            background:#fefdfb;
+        }
+        .book-card .book-header {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:8px;
+        }
+        .book-card .book-header .book-num {
+            font-size:0.78rem;
+            font-weight:700;
+            color:var(--accent);
+        }
+        .book-card .book-header .del-btn {
+            font-size:0.8rem;
+            color:var(--muted);
+            background:none;
+            border:none;
+            cursor:pointer;
+            padding:4px 8px;
+            border-radius:6px;
+        }
+        .book-card .book-header .del-btn:hover { color:var(--accent); background:#fef3ee; }
+        .book-card .book-summary {
+            font-size:0.78rem;
+            color:var(--muted);
+            margin-top:6px;
+            padding-top:6px;
+            border-top:1px dashed var(--border);
+            display:flex;
+            justify-content:space-between;
+        }
+
+        /* Buttons */
+        .btn {
+            display:inline-flex;
+            align-items:center;
+            gap:4px;
+            padding:8px 16px;
+            border-radius:8px;
+            font-size:0.82rem;
+            font-weight:600;
+            font-family:inherit;
+            cursor:pointer;
+            border:none;
+            transition:all 0.15s;
+        }
+        .btn-add {
+            width:100%;
+            background:#f5f0e7;
+            color:var(--muted);
+            border:1.5px dashed var(--border);
+            justify-content:center;
+            margin-top:4px;
+        }
+        .btn-add:hover { border-color:var(--accent); color:var(--accent); background:#fef7f2; }
+        .btn-reset { background:none; color:var(--muted); font-weight:400; font-size:0.75rem; padding:4px 8px; }
+
+        /* Budget bar */
+        .budget-bar {
+            height:6px;
+            background:#f0ede5;
+            border-radius:3px;
+            margin-top:8px;
+            overflow:hidden;
+        }
+        .budget-bar .fill {
+            height:100%;
+            border-radius:3px;
+            background:var(--green);
+            transition:width 0.3s;
+        }
+        .budget-bar .fill.over { background:var(--accent); }
+
+        /* Tag */
+        .tag {
+            display:inline-block;
+            font-size:0.7rem;
+            padding:2px 8px;
+            border-radius:10px;
+            background:#f5f0e7;
+            color:var(--muted);
+            margin-right:4px;
+        }
+
+        /* Footer */
+        .foot { text-align:center; font-size:0.7rem; color:#c5bbaa; margin-top:8px; }
+
+        @media (min-width: 640px) {
+            body { padding:24px; }
+            .container { max-width:560px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 优惠参数 -->
+        <div class="card">
+            <div class="card-title">📌 店铺优惠</div>
+            <div class="row">
+                <div class="field"><label>满</label><input type="number" id="thr" value="20" step="1" min="0"></div>
+                <div class="field"><label>减</label><input type="number" id="dis" value="19" step="1" min="0"></div>
+                <div class="field"><label>最低发货</label><input type="number" id="ship" value="10" step="0.01" min="0"></div>
+            </div>
+        </div>
+
+        <!-- 结果概览 -->
+        <div class="result-bar">
+            <div class="side">最优原价<br><strong id="rOrig">29</strong>元</div>
+            <div class="main">
+                <div class="big" id="rPayBig">10</div>
+                <div class="sub">实付 <strong>元</strong> · 页池 <strong id="rTotal">580</strong> 页</div>
+            </div>
+            <div class="side">书本原价<br><strong id="rActualOrig">15</strong>元</div>
+        </div>
+
+        <!-- 书列表 -->
+        <div id="bookList"></div>
+
+        <!-- 添加按钮 -->
+        <button class="btn btn-add" onclick="addBook()">＋ 添加一本书</button>
+
+        <!-- 汇总 -->
+        <div class="card" style="margin-top:10px;">
+            <div class="card-title">📊 汇总</div>
+            <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:4px;">
+                <span>书本原价合计</span>
+                <strong id="sumOrig">¥15</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:4px;">
+                <span>装订总费</span>
+                <strong id="sumBind">¥2</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:4px;">
+                <span>已用页池</span>
+                <strong id="sumUsed">340</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                <span>剩余页池</span>
+                <strong id="sumLeft" style="color:var(--green)">240</strong>
+            </div>
+            <div class="budget-bar"><div class="fill" id="budgetFill" style="width:0%"></div></div>
+            <div id="sumVerdict" style="font-size:0.78rem; margin-top:8px; line-height:1.6;"></div>
+        </div>
+
+        <div class="foot">数据仅供参考 · 以店铺实际规则为准</div>
+    </div>
+
+    <script>
+        const $ = id => document.getElementById(id);
+
+        // 每本书的数据
+        let books = [];
+        let bookId = 0;
+
+        function getCoupon() {
+            return {
+                thr:  parseFloat($('thr').value) || 0,
+                dis:  parseFloat($('dis').value) || 0,
+                ship: parseFloat($('ship').value) || 0,
+            };
+        }
+
+        function targetOriginal(c) {
+            return Math.max(c.thr, c.ship + c.dis);
+        }
+
+        function recalc() {
+            const c = getCoupon();
+            const pp = 0.05; // 页池基准价（双面 70g）
+
+            // ---- 书本实际原价 ----
+            let booksOrigCost = 0;   // 元
+            let usedPages = 0;       // 页池
+            let bindTotal = 0;       // 元
+            books.forEach(b => {
+                const bp = b.pagePrice || 0.05;
+                booksOrigCost += b.pages * bp + (b.bindCost || 0);
+                usedPages += Math.round(b.pages * bp / pp) + Math.round((b.bindCost || 0) / pp);
+                bindTotal += (b.bindCost || 0);
+            });
+
+            // ---- 最优点（刚好触发满减 & 满足发货）----
+            const optOrig = Math.max(c.thr, c.ship + c.dis);
+            const optPay  = optOrig - c.dis;
+            const optPages = pp > 0 ? Math.floor(optOrig / pp) : 0;
+
+            // ---- 实际付款（考虑书本真实花费）----
+            let actualOrig, actualPay, couponNote;
+            if (books.length === 0 || booksOrigCost <= 0) {
+                actualOrig = 0;
+                actualPay  = 0;
+                couponNote = '';
+            } else if (booksOrigCost < c.thr) {
+                // 不触发满减
+                actualOrig = booksOrigCost;
+                actualPay  = booksOrigCost;
+                couponNote = booksOrigCost < c.ship
+                    ? `（未满 ${c.ship} 元发货门槛，需加内容）`
+                    : '（未触发满减，原价支付）';
+            } else {
+                // 触发满减
+                if (booksOrigCost - c.dis >= c.ship) {
+                    // 满减后仍满足发货
+                    actualOrig = booksOrigCost;
+                    actualPay  = booksOrigCost - c.dis;
+                    couponNote = '（已触发满减）';
+                } else {
+                    // 满减后不够发货 → 必须加钱到最优
+                    actualOrig = optOrig;
+                    actualPay  = optPay;
+                    couponNote = '（需凑到最优发货线）';
+                }
+            }
+
+            // 实际原价对应的页池（用于进度条参考）
+            const actualPool = pp > 0 ? Math.floor(Math.max(actualOrig, optOrig) / pp) : optPages;
+            const avail = actualPool - usedPages;
+
+            // ---- 更新顶部概览 ----
+            $('rOrig').textContent    = optOrig;
+            $('rTotal').textContent   = optPages;
+            $('rActualOrig').textContent = booksOrigCost > 0 ? booksOrigCost.toFixed(0) : '0';
+            $('rPayBig').textContent  = books.length > 0 ? actualPay.toFixed(0) : optPay;
+            $('rPayBig').className    = 'big' + (actualPay > optPay ? ' warn' : '');
+
+            // ---- 更新汇总 ----
+            $('sumOrig').textContent  = '¥' + booksOrigCost.toFixed(1);
+            $('sumBind').textContent  = '¥' + bindTotal.toFixed(0);
+            $('sumUsed').textContent  = usedPages;
+            $('sumLeft').textContent  = Math.max(0, avail);
+            $('sumLeft').style.color   = avail >= 0 ? 'var(--green)' : 'var(--accent)';
+
+            // 进度条
+            const pct = actualPool > 0 ? Math.min(100, (usedPages / actualPool) * 100) : 0;
+            const fill = $('budgetFill');
+            fill.style.width = pct + '%';
+            fill.className = 'fill' + (usedPages > actualPool ? ' over' : '');
+
+            // ---- 结论 ----
+            const v = $('sumVerdict');
+            if (books.length === 0) {
+                v.innerHTML = '👆 点击上方按钮添加你要打印的书';
+            } else {
+                const over = usedPages - actualPool;
+                if (over > 0) {
+                    v.innerHTML = `⚠️ 超出页池 <strong>${over} 页</strong>，满减后<strong>实付 ¥${actualPay.toFixed(0)}</strong>${couponNote}<br>💡 超出部分正常计费，不影响满减。可考虑拆单再薅一次首单。`;
+                } else if (avail === 0) {
+                    v.innerHTML = `✅ 刚好卡满！满减后<strong>实付 ¥${actualPay.toFixed(0)}</strong>${couponNote}`;
+                } else {
+                    v.innerHTML = `✅ 余 <strong>${avail} 页</strong>，满减后<strong>实付 ¥${actualPay.toFixed(0)}</strong>${couponNote}<br>📌 还可加内容或再装订。`;
+                }
+            }
+        }
+
+        function createBookData() {
+            return { id: ++bookId, pages: 100, bindType: 'leather', bindCost: 2, mode: 'double', pagePrice: 0.05, weight: '70g' };
+        }
+
+        function bookTotalPages(b) {
+            // 用页池基准 (0.05) 折算
+            const pp = 0.05;
+            return Math.round(b.pages * (b.pagePrice || 0.05) / pp) + Math.round((b.bindCost || 0) / pp);
+        }
+
+        function renderBooks() {
+            const list = $('bookList');
+            if (books.length === 0) { list.innerHTML = ''; return; }
+
+            list.innerHTML = books.map((b, i) => {
+                const bp = bookTotalPages(b);
+                const bindLabel = b.bindType === 'none' ? '不装订' :
+                    b.bindType === 'leather' ? '皮纹纸' :
+                    b.bindType === 'copper' ? '铜版纸' : '自定义';
+                const modeLabel = b.mode === 'double' ? '双面' : b.mode === 'single' ? '单面' : '自定义';
+                return `
+                <div class="book-card">
+                    <div class="book-header">
+                        <span class="book-num">📖 第 ${i+1} 本</span>
+                        <button class="del-btn" onclick="removeBook(${b.id})">✕ 删除</button>
+                    </div>
+                    <div class="row">
+                        <div class="field"><label>内容页数</label><input type="number" value="${b.pages}" min="1" step="1" onchange="updateBook(${b.id},'pages',this.value)"></div>
+                        <div class="field"><label>打印方式</label><select onchange="updateBookMode(${b.id},this.value)">
+                            <option value="double" ${b.mode==='double'?'selected':''}>双面 ¥0.05</option>
+                            <option value="single" ${b.mode==='single'?'selected':''}>单面 ¥0.07</option>
+                            <option value="custom" ${b.mode==='custom'?'selected':''}>自定义</option>
+                        </select></div>
+                    </div>
+                    <div class="row" style="margin-top:6px;">
+                        <div class="field"><label>装订类型</label><select onchange="updateBindType(${b.id},this.value)">
+                            <option value="leather" ${b.bindType==='leather'?'selected':''}>皮纹纸 ¥2</option>
+                            <option value="copper" ${b.bindType==='copper'?'selected':''}>铜版纸 ¥5</option>
+                            <option value="custom" ${b.bindType==='custom'?'selected':''}>自定义</option>
+                            <option value="none" ${b.bindType==='none'?'selected':''}>不装订</option>
+                        </select></div>
+                        <div class="field"><label>装订费 ¥</label><input type="number" value="${b.bindCost}" min="0" step="0.01" onchange="updateBook(${b.id},'bindCost',this.value)"></div>
+                    </div>
+                    ${b.mode==='custom' ? `<div class="row" style="margin-top:6px;"><div class="field"><label>自定义单价 ¥/页</label><input type="number" value="${b.pagePrice}" min="0.01" step="0.01" onchange="updateBook(${b.id},'pagePrice',this.value)"></div><div></div></div>` : ''}
+                    <div class="book-summary">
+                        <span>📄 折合页池 <strong>${bp} 页</strong></span>
+                        <span>💰 内容 ${(b.pages * (b.pagePrice||0.05)).toFixed(1)} + 装订 ${(b.bindCost||0).toFixed(0)}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function addBook() {
+            books.push(createBookData());
+            renderBooks();
+            recalc();
+        }
+
+        function removeBook(id) {
+            books = books.filter(b => b.id !== id);
+            renderBooks();
+            recalc();
+        }
+
+        function updateBook(id, key, val) {
+            const b = books.find(b => b.id === id);
+            if (!b) return;
+            if (key === 'pages') b.pages = parseInt(val) || 0;
+            else if (key === 'bindCost') { b.bindCost = parseFloat(val) || 0; b.bindType = 'custom'; }
+            else if (key === 'pagePrice') b.pagePrice = parseFloat(val) || 0.05;
+            renderBooks();
+            recalc();
+        }
+
+        function updateBookMode(id, val) {
+            const b = books.find(b => b.id === id);
+            if (!b) return;
+            b.mode = val;
+            if (val === 'double') b.pagePrice = 0.05;
+            else if (val === 'single') b.pagePrice = 0.07;
+            // custom keeps current pagePrice
+            renderBooks();
+            recalc();
+        }
+
+        function updateBindType(id, val) {
+            const b = books.find(b => b.id === id);
+            if (!b) return;
+            b.bindType = val;
+            if (val === 'leather') b.bindCost = 2;
+            else if (val === 'copper') b.bindCost = 5;
+            else if (val === 'none') b.bindCost = 0;
+            // custom keeps current bindCost
+            renderBooks();
+            recalc();
+        }
+
+        // 优惠参数变化
+        ['thr','dis','ship'].forEach(id => {
+            $(id).addEventListener('input', () => { recalc(); });
+        });
+
+        // 初始：默认加一本书
+        books.push(createBookData());
+        books[0].pages = 300;
+        books[0].bindCost = 2;
+        renderBooks();
+        recalc();
+    </script>
+</body>
+</html>
